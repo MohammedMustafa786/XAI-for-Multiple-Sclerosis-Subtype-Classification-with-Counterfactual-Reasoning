@@ -73,8 +73,8 @@ plt.rcParams.update({
     'axes.spines.top': False, 'axes.spines.right': False,
 })
 
-COLORS = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}
-ORDER = ['RRMS', 'SPMS', 'PPMS', 'CIS']
+COLORS = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}
+ORDER = ['RRMS', 'SPMS', 'PPMS']
 
 print(f"SHAP version: {shap.__version__}")
 print("Setup complete.")"""))
@@ -239,7 +239,7 @@ cells.append(md("""### Clinical Interpretation of Summary Plots
 - **RRMS:** High relapse count (red dots on the right) pushes toward RRMS — consistent with the relapsing phenotype
 - **SPMS:** Higher EDSS and longer disease duration push toward SPMS — reflecting the progressive disability accumulation
 - **PPMS:** Low/zero relapse count strongly pushes toward PPMS — the defining clinical characteristic
-- **CIS:** Lower EDSS and shorter disease duration push toward CIS — early-stage, minimal disability"""))
+"""))
 
 # ── SECTION 7: SHAP BAR PLOTS PER CLASS ──
 cells.append(md("""## 7. Mean SHAP Values Per Class
@@ -489,7 +489,6 @@ cells.append(md("""## 13. Summary
    - RRMS: relapse-related features
    - SPMS: disability progression features
    - PPMS: absence of relapses + progressive markers
-   - CIS: low disability scores
 3. **Individual Explanations:** Waterfall and force plots explain each prediction for clinical transparency
 4. **Feature Interactions:** SHAP reveals which features jointly influence predictions
 5. **Misclassification Insights:** Errors often occur at subtype boundaries where clinical features overlap

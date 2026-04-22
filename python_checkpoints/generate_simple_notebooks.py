@@ -55,8 +55,8 @@ plt.rcParams.update({{
     'figure.figsize': (10, 6), 'axes.grid': True, 'grid.alpha': 0.3,
 }})
 
-COLORS = {{'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}}
-ORDER = ['RRMS', 'SPMS', 'PPMS', 'CIS']
+COLORS = {{'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}}
+ORDER = ['RRMS', 'SPMS', 'PPMS']
 
 print("All libraries loaded successfully!")""")
 
@@ -332,7 +332,7 @@ print("Generating simplified notebooks...")
 c = []
 c.append(md("""# Simple Logistic Regression — MS Subtype Classification
 
-**Goal:** Predict which MS subtype (RRMS, SPMS, PPMS, CIS) a patient has based on clinical and MRI features.
+**Goal:** Predict which MS subtype (RRMS, SPMS, PPMS) a patient has based on clinical and MRI features.
 
 **About Logistic Regression:** A simple linear model that predicts class probabilities using the softmax function. It gives us a baseline and interpretable coefficients.
 

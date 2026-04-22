@@ -21,7 +21,7 @@ cells = []
 # SECTION 1: IMPORTS AND CONFIGURATION
 # =====================================================================
 cells.append(md("""# Multinomial Logistic Regression for Multi-Class MS Subtype Classification
-## (RRMS, SPMS, PPMS, CIS)
+## (RRMS, SPMS, PPMS)
 
 ---
 
@@ -31,7 +31,6 @@ cells.append(md("""# Multinomial Logistic Regression for Multi-Class MS Subtype 
 - **RRMS** — Relapsing-Remitting MS
 - **SPMS** — Secondary Progressive MS
 - **PPMS** — Primary Progressive MS
-- **CIS** — Clinically Isolated Syndrome
 
 ---"""))
 
@@ -91,7 +90,7 @@ plt.rcParams.update({
     'axes.spines.right': False,
 })
 
-CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}
+CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}
 
 print("Environment configured successfully.")
 print(f"NumPy: {np.__version__}, Pandas: {pd.__version__}")
@@ -148,7 +147,7 @@ cells.append(md("""### 2.1 Visualizations
 The bar plot below reveals the class balance. Significant imbalance can bias the model toward majority classes, necessitating techniques such as class weighting."""))
 
 cells.append(code("""fig, ax = plt.subplots(figsize=(8, 5))
-order = ['RRMS', 'SPMS', 'PPMS', 'CIS']
+order = ['RRMS', 'SPMS', 'PPMS']
 colors = [CLASS_PALETTE[s] for s in order]
 counts = df['subtype'].value_counts().reindex(order)
 bars = ax.bar(order, counts, color=colors, edgecolor='white', linewidth=1.2)
@@ -211,7 +210,7 @@ plt.show()"""))
 
 cells.append(md("""### 2.2 Clinical Interpretation of Key Observations
 
-- **EDSS (Expanded Disability Status Scale):** Higher EDSS scores are expected in progressive subtypes (SPMS, PPMS) compared to RRMS and CIS.
+- **EDSS (Expanded Disability Status Scale):** Higher EDSS scores are expected in progressive subtypes (SPMS, PPMS) compared to RRMS.
 - **Disease Duration & Age at Onset:** SPMS patients typically have longer disease durations, reflecting the natural transition from RRMS.
 - **Relapse Count:** RRMS is characterized by relapses, while PPMS typically shows no relapses — a key discriminative feature.
 - **Brain/GM/WM Volumes:** Progressive subtypes often exhibit greater atrophy (lower volumes).
@@ -739,7 +738,7 @@ This notebook established a **Multinomial Logistic Regression baseline** for MS 
 
 1. **Linear Model Baseline:** Logistic Regression provides an interpretable, well-calibrated baseline against which more complex models (Random Forest, XGBoost, etc.) can be compared.
 2. **Coefficient Interpretability:** The model reveals which clinical and MRI features most strongly distinguish each subtype.
-3. **Class Imbalance Handling:** Using `class_weight='balanced'` ensures minority subtypes (PPMS, CIS) are not ignored.
+3. **Class Imbalance Handling:** Using `class_weight='balanced'` ensures minority subtype (PPMS) are not ignored.
 4. **Multicollinearity:** VIF analysis identified correlated features that may benefit from dimensionality reduction in future work.
 5. **Limitations:** The linear decision boundary may not capture nonlinear biological interactions inherent in MS pathophysiology.
 

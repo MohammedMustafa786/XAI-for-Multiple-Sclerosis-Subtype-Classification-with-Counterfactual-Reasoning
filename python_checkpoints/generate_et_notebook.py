@@ -20,7 +20,7 @@ cells = []
 # SECTION 1
 # =====================================================================
 cells.append(md("""# Extra Trees Classifier for Multi-Class MS Subtype Classification
-## (RRMS, SPMS, PPMS, CIS)
+## (RRMS, SPMS, PPMS)
 
 ---
 
@@ -30,7 +30,6 @@ cells.append(md("""# Extra Trees Classifier for Multi-Class MS Subtype Classific
 - **RRMS** — Relapsing-Remitting MS
 - **SPMS** — Secondary Progressive MS
 - **PPMS** — Primary Progressive MS
-- **CIS** — Clinically Isolated Syndrome
 
 ---"""))
 
@@ -86,7 +85,7 @@ plt.rcParams.update({
     'axes.spines.right': False,
 })
 
-CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}
+CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}
 
 print("Environment configured successfully.")
 print(f"NumPy: {np.__version__}, Pandas: {pd.__version__}")
@@ -135,7 +134,7 @@ cells.append(md("""### 2.1 Visualizations
 #### Subtype Distribution"""))
 
 cells.append(code("""fig, ax = plt.subplots(figsize=(8, 5))
-order = ['RRMS', 'SPMS', 'PPMS', 'CIS']
+order = ['RRMS', 'SPMS', 'PPMS']
 colors = [CLASS_PALETTE[s] for s in order]
 counts = df['subtype'].value_counts().reindex(order)
 bars = ax.bar(order, counts, color=colors, edgecolor='white', linewidth=1.2)
@@ -218,7 +217,7 @@ cells.append(md("""### 2.2 Clinical Interpretation
 
 - **EDSS:** Progressive subtypes (SPMS, PPMS) show higher disability scores, reflecting cumulative neurodegeneration.
 - **Disease Duration:** SPMS patients typically have the longest duration, consistent with the RRMS → SPMS conversion pathway.
-- **Relapse Count:** Discriminates relapsing (RRMS, CIS) from progressive (PPMS) subtypes — PPMS has zero relapses by definition.
+- **Relapse Count:** Discriminates relapsing (RRMS) from progressive (PPMS) subtypes — PPMS has zero relapses by definition.
 - **MRI Volumes:** Brain and gray matter atrophy is more pronounced in progressive forms.
 - **Class Imbalance:** RRMS dominates the dataset; `class_weight='balanced'` compensates during training."""))
 
@@ -325,7 +324,7 @@ cells.append(code("""# Build the Extra Trees model
 model = ExtraTreesClassifier(
     n_estimators=300,
     criterion='gini',
-    max_depth=None,
+    max_depth=2,
     class_weight='balanced',
     n_jobs=-1,
     random_state=RANDOM_STATE
@@ -347,7 +346,7 @@ Extra Trees typically shows **lower variance across folds** compared to Random F
 ### Macro F1 for Imbalanced Subtypes
 
 - **Macro F1** gives equal weight to every subtype regardless of prevalence
-- Ensures clinically important but rare subtypes (PPMS, CIS) are not overlooked
+- Ensures clinically important but rare subtype (PPMS) are not overlooked
 - A model with high accuracy but low Macro F1 is merely predicting the majority class"""))
 
 cells.append(code("""# Stratified 5-Fold CV
@@ -463,7 +462,6 @@ except ValueError as e:
 cells.append(md("""### 7.1 Confusion Matrix
 
 **Clinical Implications of Misclassifications:**
-- **CIS → RRMS:** May lead to premature long-term therapy initiation
 - **RRMS → SPMS:** Could trigger inappropriate switch to progressive treatment protocols
 - **PPMS → SPMS:** Both progressive, but treatment strategies differ
 - Minimizing false negatives for progressive subtypes is clinically critical"""))
@@ -557,7 +555,7 @@ where $w_n$ is the fraction of samples reaching node $n$ and $\\Delta G(n)$ is t
 In MS subtype classification, we expect high importance for:
 - **EDSS / progression rate** — direct disability measures differentiating progressive from relapsing forms
 - **Disease duration** — SPMS evolves from long-standing RRMS
-- **Relapse count** — zero in PPMS, present in RRMS/CIS
+- **Relapse count** — zero in PPMS, present in RRMS
 - **Lesion metrics** — MRI biomarkers of disease burden"""))
 
 cells.append(code("""# Detailed importance table

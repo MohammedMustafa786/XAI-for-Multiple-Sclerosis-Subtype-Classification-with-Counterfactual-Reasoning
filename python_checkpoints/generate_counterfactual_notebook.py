@@ -75,9 +75,9 @@ plt.rcParams.update({
     'figure.figsize': (10, 6), 'axes.grid': True, 'grid.alpha': 0.3,
 })
 
-COLORS = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}
+COLORS = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}
 
-print(f"DiCE version: {dice_ml.__version__}")
+print(f"DiCE version: {"DiCE"}")
 print("Setup complete.")"""))
 
 # ── SECTION 3: DATA + MODEL ──
@@ -133,14 +133,18 @@ DiCE needs three things:
 3. **Counterfactual generator** — the algorithm to find counterfactuals"""))
 
 cells.append(code("""# Prepare data for DiCE
-# DiCE needs the outcome column (as original string labels, not encoded)
+# DiCE with sklearn backend works best with integer-encoded labels
 train_for_dice = X_train_ready.copy()
-train_for_dice['subtype'] = le.inverse_transform(y_train)
+train_for_dice['subtype'] = y_train  # integer-encoded labels
 
 # Define feature types
 continuous_features = [c for c in feature_cols if c not in ['sex_encoded', 'treatment_status']]
+
+# Build class index mapping for reference
+class_index_map = {name: idx for idx, name in enumerate(class_names)}
 print(f"Continuous features ({len(continuous_features)}): {continuous_features}")
-print(f"Outcome: subtype")"""))
+print(f"Outcome: subtype (integer-encoded)")
+print(f"Class mapping: {class_index_map}")"""))
 
 cells.append(code("""# Create DiCE data object
 dice_data = dice_ml.Data(
@@ -150,31 +154,8 @@ dice_data = dice_ml.Data(
 )
 print("DiCE Data object created.")"""))
 
-cells.append(code("""# Create a sklearn-compatible wrapper for our model
-# DiCE needs the model to accept DataFrames and return string labels
-from sklearn.base import BaseEstimator, ClassifierMixin
-
-class XGBWrapper(BaseEstimator, ClassifierMixin):
-    def __init__(self, model, le):
-        self.model = model
-        self.le = le
-        self.classes_ = le.classes_
-    
-    def fit(self, X, y):
-        return self
-    
-    def predict(self, X):
-        preds = self.model.predict(X)
-        return self.le.inverse_transform(preds)
-    
-    def predict_proba(self, X):
-        return self.model.predict_proba(X)
-
-wrapped_model = XGBWrapper(model, le)
-wrapped_model.fit(X_train_ready, y_train)  # No-op, just sets attributes
-
-# Create DiCE model
-dice_model = dice_ml.Model(model=wrapped_model, backend='sklearn')
+cells.append(code("""# Use XGBoost model directly (no wrapper needed for integer labels)
+dice_model = dice_ml.Model(model=model, backend='sklearn')
 print("DiCE Model object created.")"""))
 
 cells.append(code("""# Create the counterfactual explainer
@@ -198,31 +179,45 @@ cells.append(code("""# Generate counterfactuals for one patient per subtype
 y_pred_test = model.predict(X_test_ready)
 results = {}
 
+# For multi-class with integer labels, specify target as integer class index
+# Strategy: for each subtype, flip to the most clinically relevant alternative
+target_map = {}  # source_class_idx -> target_class_idx
+for idx_src, name_src in enumerate(class_names):
+    if name_src == 'PPMS':
+        target_map[idx_src] = list(class_names).index('RRMS')  # PPMS -> RRMS
+    elif name_src == 'RRMS':
+        target_map[idx_src] = list(class_names).index('SPMS')  # RRMS -> SPMS
+    elif name_src == 'SPMS':
+        target_map[idx_src] = list(class_names).index('RRMS')  # SPMS -> RRMS
+
 for class_idx, name in enumerate(class_names):
     # Find a correctly classified patient
     mask = (y_test == class_idx) & (y_pred_test == class_idx)
     if mask.sum() > 0:
         idx = np.where(mask)[0][0]
         patient = X_test_ready.iloc[[idx]]
-        pred_label = le.inverse_transform([y_pred_test[idx]])[0]
+        pred_label = class_names[y_pred_test[idx]]
+        target_idx = target_map[class_idx]
+        target_name = class_names[target_idx]
         
         print(f"\\n{'='*60}")
         print(f"Patient (test index {idx}): Predicted as {pred_label}")
+        print(f"Target counterfactual class: {target_name} (index {target_idx})")
         print(f"{'='*60}")
         print(f"Current feature values:")
         for col in feature_cols:
             print(f"  {col:30s} {patient[col].values[0]:.2f}")
         
-        # Generate 3 diverse counterfactuals
+        # Generate 3 diverse counterfactuals using integer target class
         try:
             cf = dice_exp.generate_counterfactuals(
                 patient,
                 total_CFs=3,
-                desired_class='opposite',
+                desired_class=int(target_idx),
                 features_to_vary=continuous_features,
                 random_seed=RANDOM_STATE
             )
-            results[name] = {'idx': idx, 'patient': patient, 'cf': cf}
+            results[name] = {'idx': idx, 'patient': patient, 'cf': cf, 'target': target_name}
             cf.visualize_as_dataframe(show_only_changes=True)
         except Exception as e:
             print(f"  Could not generate CFs: {e}")
@@ -235,13 +230,14 @@ Instead of just flipping to any class, let's ask specific clinical questions:
 
 - **SPMS patient → RRMS:** What would need to change to move from secondary progressive to relapsing-remitting?
 - **PPMS patient → RRMS:** What differentiates primary progressive from relapsing-remitting?
-- **CIS patient → RRMS:** What progression would lead CIS to develop into RRMS?"""))
+"""))
 
 cells.append(code("""# Targeted: For each non-RRMS patient, generate CFs that flip to RRMS
 targeted_results = {}
+rrms_idx = int(list(class_names).index('RRMS'))
 
-for target_subtype in ['SPMS', 'PPMS', 'CIS']:
-    class_idx = list(class_names).index(target_subtype) if target_subtype in class_names else None
+for source_subtype in ['SPMS', 'PPMS']:
+    class_idx = list(class_names).index(source_subtype) if source_subtype in class_names else None
     if class_idx is None:
         continue
     
@@ -253,18 +249,21 @@ for target_subtype in ['SPMS', 'PPMS', 'CIS']:
     patient = X_test_ready.iloc[[idx]]
     
     print(f"\\n{'='*60}")
-    print(f"{target_subtype} Patient -> What would make them RRMS?")
+    print(f"{source_subtype} Patient -> What would make them RRMS?")
     print(f"{'='*60}")
+    print(f"Current values:")
+    for col in feature_cols:
+        print(f"  {col:30s} {patient[col].values[0]:.2f}")
     
     try:
         cf = dice_exp.generate_counterfactuals(
             patient,
             total_CFs=3,
-            desired_class='RRMS',
+            desired_class=rrms_idx,
             features_to_vary=continuous_features,
             random_seed=RANDOM_STATE
         )
-        targeted_results[target_subtype] = {'idx': idx, 'patient': patient, 'cf': cf}
+        targeted_results[source_subtype] = {'idx': idx, 'patient': patient, 'cf': cf}
         cf.visualize_as_dataframe(show_only_changes=True)
     except Exception as e:
         print(f"  Could not generate targeted CFs: {e}")"""))
@@ -393,12 +392,20 @@ print(f"\\nCurrent values:")
 for col in feature_cols:
     print(f"  {col:30s} {patient[col].values[0]:.2f}")
 
-print(f"\\nCounterfactuals (what would change the prediction?):")
+# For multi-class: target the true label if misclassified, else second-most-likely class
+if true_label != pred_label:
+    target_cf_idx = int(list(class_names).index(true_label))
+else:
+    sorted_probs = sorted(enumerate(probs), key=lambda x: x[1], reverse=True)
+    target_cf_idx = int(sorted_probs[1][0])  # Second most likely class
+
+print(f"\\nTarget counterfactual class: {class_names[target_cf_idx]} (index {target_cf_idx})")
+print(f"Counterfactuals (what would change the prediction?):")
 try:
     cf = dice_exp.generate_counterfactuals(
         patient,
         total_CFs=4,
-        desired_class='opposite',
+        desired_class=target_cf_idx,
         features_to_vary=continuous_features,
         random_seed=RANDOM_STATE
     )

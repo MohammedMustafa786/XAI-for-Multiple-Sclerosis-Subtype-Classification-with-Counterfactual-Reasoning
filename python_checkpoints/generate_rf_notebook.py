@@ -20,7 +20,7 @@ cells = []
 # SECTION 1: IMPORTS AND CONFIGURATION
 # =====================================================================
 cells.append(md("""# Random Forest Classifier for Multi-Class MS Subtype Classification
-## (RRMS, SPMS, PPMS, CIS)
+## (RRMS, SPMS, PPMS)
 
 ---
 
@@ -30,7 +30,6 @@ cells.append(md("""# Random Forest Classifier for Multi-Class MS Subtype Classif
 - **RRMS** — Relapsing-Remitting MS
 - **SPMS** — Secondary Progressive MS
 - **PPMS** — Primary Progressive MS
-- **CIS** — Clinically Isolated Syndrome
 
 ---"""))
 
@@ -90,7 +89,7 @@ plt.rcParams.update({
     'axes.spines.right': False,
 })
 
-CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}
+CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}
 
 print("Environment configured successfully.")
 print(f"NumPy: {np.__version__}, Pandas: {pd.__version__}")
@@ -141,10 +140,10 @@ cells.append(md("""### 2.1 Visualizations
 
 #### Subtype Distribution
 
-Class imbalance is a critical consideration. Random Forest can handle moderate imbalance natively, but we additionally use `class_weight='balanced'` to ensure minority subtypes (PPMS, CIS) are not overlooked."""))
+Class imbalance is a critical consideration. Random Forest can handle moderate imbalance natively, but we additionally use `class_weight='balanced'` to ensure minority subtype (PPMS) are not overlooked."""))
 
 cells.append(code("""fig, ax = plt.subplots(figsize=(8, 5))
-order = ['RRMS', 'SPMS', 'PPMS', 'CIS']
+order = ['RRMS', 'SPMS', 'PPMS']
 colors = [CLASS_PALETTE[s] for s in order]
 counts = df['subtype'].value_counts().reindex(order)
 bars = ax.bar(order, counts, color=colors, edgecolor='white', linewidth=1.2)
@@ -222,7 +221,7 @@ plt.show()"""))
 
 cells.append(md("""### 2.2 Clinical Interpretation
 
-- **EDSS:** Progressive subtypes (SPMS, PPMS) exhibit higher disability scores compared to RRMS and CIS.
+- **EDSS:** Progressive subtypes (SPMS, PPMS) exhibit higher disability scores compared to RRMS.
 - **Disease Duration:** SPMS patients typically have the longest disease duration, reflecting the natural transition from RRMS over years.
 - **Relapse Count:** RRMS is defined by clinical relapses; PPMS by definition has no relapses — a powerful discriminative feature.
 - **MRI Volumes:** Brain/GM/WM atrophy (lower volumes) is more pronounced in progressive forms, reflecting neurodegeneration.
@@ -350,7 +349,7 @@ Cross-validation provides a robust estimate of generalization before committing 
 
 In multi-class MS classification:
 - **Macro F1** treats all subtypes equally, regardless of prevalence
-- Correctly identifying rare subtypes (PPMS, CIS) is clinically as important as identifying RRMS
+- Correctly identifying rare subtype (PPMS) is clinically as important as identifying RRMS
 - A model achieving 60% accuracy by predicting only RRMS would have a misleadingly high accuracy but poor Macro F1
 
 ### Stability Analysis
@@ -476,7 +475,7 @@ The confusion matrix reveals the model's subtype-level discrimination.
 **Clinical Implications:**
 - **RRMS → SPMS misclassification:** May falsely indicate disease progression, leading to premature treatment escalation.
 - **PPMS → RRMS misclassification:** Could result in inappropriate relapse-focused therapies for a primarily progressive patient.
-- **CIS misclassification:** Incorrect classification of CIS may affect early intervention decisions."""))
+"""))
 
 cells.append(code("""fig, ax = plt.subplots(figsize=(8, 6))
 cm = confusion_matrix(y_test, y_pred)

@@ -20,7 +20,7 @@ cells = []
 # SECTION 1
 # =====================================================================
 cells.append(md("""# XGBoost Classifier for Multi-Class MS Subtype Classification
-## (RRMS, SPMS, PPMS, CIS)
+## (RRMS, SPMS, PPMS)
 
 ---
 
@@ -30,7 +30,6 @@ cells.append(md("""# XGBoost Classifier for Multi-Class MS Subtype Classificatio
 - **RRMS** — Relapsing-Remitting MS
 - **SPMS** — Secondary Progressive MS
 - **PPMS** — Primary Progressive MS
-- **CIS** — Clinically Isolated Syndrome
 
 ---"""))
 
@@ -60,9 +59,11 @@ from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     accuracy_score, f1_score, precision_score, recall_score,
     confusion_matrix, ConfusionMatrixDisplay, classification_report,
-    roc_auc_score, roc_curve, auc, precision_recall_curve, average_precision_score
+    roc_auc_score, roc_curve, auc, precision_recall_curve, average_precision_score,
+    log_loss, cohen_kappa_score, matthews_corrcoef, balanced_accuracy_score
 )
 from sklearn.preprocessing import label_binarize
+from scipy import stats
 
 # ── XGBoost ──
 from xgboost import XGBClassifier
@@ -89,7 +90,7 @@ plt.rcParams.update({
     'axes.spines.right': False,
 })
 
-CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}
+CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}
 
 print("Environment configured successfully.")
 print(f"NumPy: {np.__version__}, Pandas: {pd.__version__}")
@@ -138,7 +139,7 @@ cells.append(md("""### 2.1 Visualizations
 #### Subtype Distribution"""))
 
 cells.append(code("""fig, ax = plt.subplots(figsize=(8, 5))
-order = ['RRMS', 'SPMS', 'PPMS', 'CIS']
+order = ['RRMS', 'SPMS', 'PPMS']
 colors = [CLASS_PALETTE[s] for s in order]
 counts = df['subtype'].value_counts().reindex(order)
 bars = ax.bar(order, counts, color=colors, edgecolor='white', linewidth=1.2)
@@ -220,9 +221,9 @@ plt.show()"""))
 
 cells.append(md("""### 2.2 Clinical Interpretation
 
-- **EDSS:** Progressive subtypes (SPMS, PPMS) cluster at higher disability scores. XGBoost can capture the nonlinear thresholds distinguishing mild (CIS/RRMS) from severe (SPMS/PPMS) disability.
+- **EDSS:** Progressive subtypes (SPMS, PPMS) cluster at higher disability scores. XGBoost can capture the nonlinear thresholds distinguishing mild (RRMS) from severe (SPMS/PPMS) disability.
 - **Disease Duration:** SPMS evolves from RRMS over years — a complex temporal relationship that boosting can model through sequential splits.
-- **Relapse Count:** Binary-like discriminator (present in RRMS/CIS, absent in PPMS). XGBoost efficiently isolates such features early in the tree ensemble.
+- **Relapse Count:** Binary-like discriminator (present in RRMS, absent in PPMS). XGBoost efficiently isolates such features early in the tree ensemble.
 - **MRI Volumes:** Progressive atrophy patterns provide complementary information to clinical scores.
 - **Class Imbalance:** Addressed through XGBoost's `sample_weight` mechanism, computed from class frequencies."""))
 
@@ -370,7 +371,7 @@ cells.append(md("""---
 
 ### Macro F1 and Subtype Imbalance
 
-- **Macro F1** averages F1 across all classes equally — critical when rare subtypes (PPMS, CIS) carry equal clinical importance
+- **Macro F1** averages F1 across all classes equally — critical when rare subtype (PPMS) carry equal clinical importance
 - A model achieving high accuracy by only predicting RRMS would score poorly on Macro F1
 - Cross-validation with stratification ensures each fold preserves class ratios
 
@@ -535,7 +536,6 @@ cells.append(md("""### 7.1 Confusion Matrix
 **Clinical Meaning of Misclassifications:**
 - **RRMS → SPMS:** False alarm of disease progression — may trigger unnecessary treatment escalation
 - **PPMS → RRMS:** Masking a progressive course could delay appropriate neuroprotective strategies
-- **CIS → RRMS:** Premature long-term DMT initiation for what may be a single demyelinating event
 - XGBoost's sequential error correction often improves discrimination in difficult boundary cases"""))
 
 cells.append(code("""fig, ax = plt.subplots(figsize=(8, 6))
@@ -581,7 +581,286 @@ ax.set_ylim([-0.02, 1.05])
 plt.tight_layout()
 plt.show()"""))
 
-cells.append(md("""### 7.4 Feature Importance (Built-in)"""))
+cells.append(md("""### 7.4 Log Loss & Loss Function Analysis
+
+#### Training Loss Function
+
+XGBoost uses **multi-class log loss** (softmax cross-entropy) as its training objective (`multi:softprob`):
+
+$$\\mathcal{L} = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{c=1}^{C} y_{i,c} \\log(\\hat{p}_{i,c})$$
+
+where $y_{i,c}$ is the one-hot encoded true label and $\\hat{p}_{i,c}$ is the predicted probability for class $c$.
+
+**Why Log Loss Matters:**
+- Accuracy only measures hard predictions; log loss evaluates **probability calibration**
+- A model predicting 0.51 vs 0.99 for the correct class both get accuracy credit, but log loss distinguishes them
+- Lower log loss = better calibrated, more confident correct predictions"""))
+
+cells.append(code("""# ── Log Loss (Multi-class Cross-Entropy) ──
+from sklearn.metrics import log_loss as sklearn_log_loss
+
+logloss = sklearn_log_loss(y_test, y_proba)
+print("Log Loss (Multi-class Cross-Entropy):")
+print(f"  Test Log Loss: {logloss:.4f}")
+print(f"  Ideal (perfect model): 0.0000")
+print(f"  Random baseline ({len(class_names)} classes): {np.log(len(class_names)):.4f}")
+print()
+
+# Per-class log loss
+print("Per-Class Log Loss Contribution:")
+for i, name in enumerate(class_names):
+    mask = y_test == i
+    if mask.sum() > 0:
+        class_ll = -np.mean(np.log(np.clip(y_proba[mask, i], 1e-15, 1.0)))
+        print(f"  {name}: {class_ll:.4f} (n={mask.sum()})")"""))
+
+cells.append(code("""# Visualize log loss vs random baseline
+fig, ax = plt.subplots(figsize=(8, 5))
+
+random_ll = np.log(len(class_names))
+categories = ['XGBoost\\n(Test)', 'Random\\nBaseline']
+values = [logloss, random_ll]
+colors_ll = ['#4CAF50' if logloss < random_ll else '#FF5722', '#9E9E9E']
+
+bars = ax.bar(categories, values, color=colors_ll, edgecolor='white', linewidth=1.2, width=0.5)
+for bar, v in zip(bars, values):
+    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
+            f'{v:.4f}', ha='center', va='bottom', fontweight='bold', fontsize=12)
+ax.set_ylabel('Log Loss')
+ax.set_title('Log Loss Comparison — XGBoost vs Random Baseline')
+ax.set_ylim(0, max(values) * 1.3)
+plt.tight_layout()
+plt.show()"""))
+
+cells.append(md("""### 7.5 Advanced Evaluation Metrics
+
+| Metric | Definition | Why It Matters |
+|--------|-----------|----------------|
+| **Balanced Accuracy** | Average recall across all classes | Robust to class imbalance |
+| **Cohen's Kappa (κ)** | Agreement beyond chance: $\\kappa = \\frac{p_o - p_e}{1 - p_e}$ | Measures real predictive skill |
+| **Matthews Correlation Coefficient (MCC)** | Correlation between predicted & actual | Only gives high score when all four confusion matrix categories are good |
+| **Per-class Specificity** | True Negative Rate per class | Critical for ruling out subtypes |
+| **Macro Precision** | Average precision across all classes | Ensures no class has excessive false positives |"""))
+
+cells.append(code("""# ── Comprehensive Metrics Table ──
+balanced_acc = balanced_accuracy_score(y_test, y_pred)
+kappa = cohen_kappa_score(y_test, y_pred)
+mcc = matthews_corrcoef(y_test, y_pred)
+macro_prec = precision_score(y_test, y_pred, average='macro')
+macro_rec = recall_score(y_test, y_pred, average='macro')
+
+print("="*60)
+print("COMPREHENSIVE EVALUATION METRICS — XGBoost")
+print("="*60)
+print(f"")
+print(f"  Accuracy:              {acc:.4f}")
+print(f"  Balanced Accuracy:     {balanced_acc:.4f}")
+print(f"  Macro Precision:       {macro_prec:.4f}")
+print(f"  Macro Recall:          {macro_rec:.4f}")
+print(f"  Macro F1-Score:        {f1_mac:.4f}")
+print(f"  Weighted F1-Score:     {f1_wt:.4f}")
+print(f"  Log Loss:              {logloss:.4f}")
+if roc_auc_ovr is not None:
+    print(f"  ROC-AUC (OvR Macro):   {roc_auc_ovr:.4f}")
+print(f"  Cohen's Kappa (κ):     {kappa:.4f}")
+print(f"  Matthews CC (MCC):     {mcc:.4f}")
+print(f"")
+print("Interpretation Guide:")
+print(f"  Kappa: {'Almost Perfect' if kappa > 0.81 else 'Substantial' if kappa > 0.61 else 'Moderate' if kappa > 0.41 else 'Fair'} agreement (Landis & Koch scale)")
+print(f"  MCC:   {'Excellent' if mcc > 0.7 else 'Good' if mcc > 0.5 else 'Moderate'} correlation")"""))
+
+cells.append(code("""# Per-class Specificity (True Negative Rate)
+cm_full = confusion_matrix(y_test, y_pred)
+print("Per-Class Specificity (True Negative Rate):")
+print("-" * 45)
+specificity_list = []
+for i, name in enumerate(class_names):
+    TP = cm_full[i, i]
+    FP = cm_full[:, i].sum() - TP
+    FN = cm_full[i, :].sum() - TP
+    TN = cm_full.sum() - TP - FP - FN
+    spec = TN / (TN + FP) if (TN + FP) > 0 else 0
+    specificity_list.append(spec)
+    sens = TP / (TP + FN) if (TP + FN) > 0 else 0
+    print(f"  {name}: Specificity = {spec:.4f} | Sensitivity = {sens:.4f}")
+print(f"\\n  Macro Specificity: {np.mean(specificity_list):.4f}")"""))
+
+cells.append(code("""# Comprehensive metrics radar chart
+fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+
+metric_names_radar = ['Accuracy', 'Bal. Accuracy', 'Macro F1', 'Macro Prec.',
+                      'Macro Recall', 'Kappa', 'MCC']
+metric_values = [acc, balanced_acc, f1_mac, macro_prec, macro_rec, kappa, mcc]
+
+# Close the polygon
+angles = np.linspace(0, 2 * np.pi, len(metric_names_radar), endpoint=False).tolist()
+metric_values_plot = metric_values + [metric_values[0]]
+angles += [angles[0]]
+
+ax.fill(angles, metric_values_plot, color='#2196F3', alpha=0.25)
+ax.plot(angles, metric_values_plot, 'o-', color='#2196F3', linewidth=2, markersize=6)
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(metric_names_radar, fontsize=9)
+ax.set_ylim(0, 1.05)
+ax.set_title('Comprehensive Metrics Radar — XGBoost', fontsize=13, pad=20)
+
+# Add value labels
+for angle, value, name in zip(angles[:-1], metric_values, metric_names_radar):
+    ax.text(angle, value + 0.05, f'{value:.3f}', ha='center', va='bottom', fontsize=8, fontweight='bold')
+
+plt.tight_layout()
+plt.show()"""))
+
+cells.append(md("""### 7.6 Statistical Analysis & Confidence Intervals
+
+#### Bootstrap Confidence Intervals
+
+We use **bootstrap resampling** (1000 iterations) to estimate 95% confidence intervals for key metrics. This provides a statistically rigorous uncertainty quantification:
+
+$$\\text{CI}_{95\\%} = [\\hat{\\theta}_{2.5\\%}, \\hat{\\theta}_{97.5\\%}]$$
+
+where $\\hat{\\theta}$ is the metric computed on each bootstrap sample.
+
+#### Hypothesis Testing
+
+**McNemar's-style analysis**: We test whether the model's predictions are significantly better than random using a chi-squared goodness-of-fit test against the prior class distribution."""))
+
+cells.append(code("""# ── Bootstrap Confidence Intervals (95%) ──
+np.random.seed(RANDOM_STATE)
+n_bootstrap = 1000
+n_test = len(y_test)
+
+boot_accuracy = []
+boot_f1_macro = []
+boot_precision = []
+boot_logloss = []
+boot_mcc = []
+boot_kappa = []
+
+for _ in range(n_bootstrap):
+    indices = np.random.choice(n_test, size=n_test, replace=True)
+    y_true_b = y_test[indices]
+    y_pred_b = y_pred[indices]
+    y_proba_b = y_proba[indices]
+    
+    # Skip if bootstrap sample doesn't contain all classes
+    if len(np.unique(y_true_b)) < len(class_names):
+        continue
+    
+    boot_accuracy.append(accuracy_score(y_true_b, y_pred_b))
+    boot_f1_macro.append(f1_score(y_true_b, y_pred_b, average='macro'))
+    boot_precision.append(precision_score(y_true_b, y_pred_b, average='macro'))
+    boot_logloss.append(sklearn_log_loss(y_true_b, y_proba_b))
+    boot_mcc.append(matthews_corrcoef(y_true_b, y_pred_b))
+    boot_kappa.append(cohen_kappa_score(y_true_b, y_pred_b))
+
+print("95% Bootstrap Confidence Intervals (1000 iterations):")
+print("=" * 65)
+for name, values in [('Accuracy', boot_accuracy), ('Macro F1', boot_f1_macro),
+                      ('Macro Precision', boot_precision), ('Log Loss', boot_logloss),
+                      ('MCC', boot_mcc), ("Cohen's Kappa", boot_kappa)]:
+    lo, hi = np.percentile(values, [2.5, 97.5])
+    mu = np.mean(values)
+    sigma = np.std(values)
+    print(f"  {name:>16s}: {mu:.4f} ± {sigma:.4f}  CI=[{lo:.4f}, {hi:.4f}]")"""))
+
+cells.append(code("""# Visualize bootstrap distributions
+fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+axes = axes.flatten()
+
+boot_data = [
+    ('Accuracy', boot_accuracy, acc, '#2196F3'),
+    ('Macro F1', boot_f1_macro, f1_mac, '#FF5722'),
+    ('Macro Precision', boot_precision, macro_prec, '#4CAF50'),
+    ('Log Loss', boot_logloss, logloss, '#9C27B0'),
+    ('MCC', boot_mcc, mcc, '#FF9800'),
+    ("Cohen's Kappa", boot_kappa, kappa, '#00BCD4')
+]
+
+for ax, (name, values, point_est, color) in zip(axes, boot_data):
+    ax.hist(values, bins=40, color=color, alpha=0.7, edgecolor='white')
+    lo, hi = np.percentile(values, [2.5, 97.5])
+    ax.axvline(point_est, color='red', linewidth=2, linestyle='-', label=f'Point: {point_est:.4f}')
+    ax.axvline(lo, color='black', linewidth=1.5, linestyle='--', label=f'2.5%: {lo:.4f}')
+    ax.axvline(hi, color='black', linewidth=1.5, linestyle='--', label=f'97.5%: {hi:.4f}')
+    ax.set_title(f'{name} Bootstrap Distribution', fontsize=11)
+    ax.legend(fontsize=8)
+    ax.set_ylabel('Frequency')
+
+fig.suptitle('Bootstrap Confidence Intervals (95%) — XGBoost', fontsize=14, fontweight='bold', y=1.01)
+plt.tight_layout()
+plt.show()"""))
+
+cells.append(code("""# ── Statistical Hypothesis Testing ──
+from scipy import stats
+
+# Test 1: Chi-squared test — are predictions significantly different from random?
+expected_counts = np.array([(y_test == i).sum() for i in range(len(class_names))]) / len(y_test) * len(y_test)
+observed_counts = np.array([(y_pred == i).sum() for i in range(len(class_names))])
+
+print("Statistical Hypothesis Tests:")
+print("=" * 65)
+
+# Test 2: One-sample t-test — is bootstrap accuracy significantly > baseline?
+baseline_acc = max(np.bincount(y_test)) / len(y_test)  # majority class baseline
+t_stat, p_value = stats.ttest_1samp(boot_accuracy, baseline_acc)
+print(f"\\n  1) One-sample t-test: Accuracy vs Majority Baseline ({baseline_acc:.4f})")
+print(f"     H0: Model accuracy = majority class baseline")
+print(f"     t-statistic = {t_stat:.4f}, p-value = {p_value:.2e}")
+print(f"     Result: {'REJECT H0 (p < 0.05) — Model is significantly better' if p_value < 0.05 else 'FAIL TO REJECT H0'}")
+
+# Test 3: Bootstrap variance analysis
+print(f"\\n  2) Bootstrap Variance Analysis:")
+for name, values in [('Accuracy', boot_accuracy), ('Macro F1', boot_f1_macro),
+                      ('Log Loss', boot_logloss)]:
+    print(f"     {name}: Mean={np.mean(values):.4f}, Var={np.var(values):.6f}, Std={np.std(values):.4f}")
+
+# Test 4: Normality test on bootstrap distributions (Shapiro-Wilk)
+print(f"\\n  3) Normality of Bootstrap Distributions (Shapiro-Wilk):")
+for name, values in [('Accuracy', boot_accuracy), ('Macro F1', boot_f1_macro)]:
+    # Use subset for Shapiro-Wilk (max 5000 samples)
+    stat_sw, p_sw = stats.shapiro(values[:500])
+    print(f"     {name}: W={stat_sw:.4f}, p={p_sw:.4f} — {'Normal' if p_sw > 0.05 else 'Non-normal'}")
+
+# Cross-validation stability: Coefficient of Variation
+print(f"\\n  4) Cross-Validation Stability (Coefficient of Variation):")
+for key, label in [('test_accuracy', 'Accuracy'), ('test_f1_macro', 'Macro F1')]:
+    cv_mean = cv_results[key].mean()
+    cv_std = cv_results[key].std()
+    cv_cov = (cv_std / cv_mean * 100) if cv_mean > 0 else 0
+    print(f"     {label}: CV={cv_cov:.2f}% — {'Stable' if cv_cov < 5 else 'Moderate' if cv_cov < 10 else 'Unstable'}")"""))
+
+cells.append(code("""# Summary metrics table
+print("\\n" + "=" * 70)
+print("COMPLETE EVALUATION SUMMARY — XGBoost Classifier")
+print("=" * 70)
+
+summary_data = {
+    'Metric': ['Accuracy', 'Balanced Accuracy', 'Macro Precision', 'Macro Recall',
+               'Macro F1-Score', 'Weighted F1-Score', 'Log Loss',
+               'ROC-AUC (OvR)', "Cohen's Kappa", 'MCC', 'Macro Specificity'],
+    'Value': [f'{acc:.4f}', f'{balanced_acc:.4f}', f'{macro_prec:.4f}', f'{macro_rec:.4f}',
+              f'{f1_mac:.4f}', f'{f1_wt:.4f}', f'{logloss:.4f}',
+              f'{roc_auc_ovr:.4f}' if roc_auc_ovr else 'N/A',
+              f'{kappa:.4f}', f'{mcc:.4f}', f'{np.mean(specificity_list):.4f}'],
+    '95% CI Lower': [f'{np.percentile(boot_accuracy, 2.5):.4f}',
+                     '-', f'{np.percentile(boot_precision, 2.5):.4f}', '-',
+                     f'{np.percentile(boot_f1_macro, 2.5):.4f}', '-',
+                     f'{np.percentile(boot_logloss, 2.5):.4f}', '-',
+                     f'{np.percentile(boot_kappa, 2.5):.4f}',
+                     f'{np.percentile(boot_mcc, 2.5):.4f}', '-'],
+    '95% CI Upper': [f'{np.percentile(boot_accuracy, 97.5):.4f}',
+                     '-', f'{np.percentile(boot_precision, 97.5):.4f}', '-',
+                     f'{np.percentile(boot_f1_macro, 97.5):.4f}', '-',
+                     f'{np.percentile(boot_logloss, 97.5):.4f}', '-',
+                     f'{np.percentile(boot_kappa, 97.5):.4f}',
+                     f'{np.percentile(boot_mcc, 97.5):.4f}', '-']
+}
+
+summary_df = pd.DataFrame(summary_data)
+print(summary_df.to_string(index=False))"""))
+
+cells.append(md("""### 7.7 Feature Importance (Built-in)"""))
 
 cells.append(code("""# Feature importance bar plot (gain-based)
 importances = model_final.feature_importances_

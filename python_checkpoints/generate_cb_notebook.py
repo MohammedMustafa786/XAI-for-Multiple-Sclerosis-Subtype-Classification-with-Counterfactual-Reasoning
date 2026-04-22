@@ -20,7 +20,7 @@ cells = []
 # SECTION 1
 # =====================================================================
 cells.append(md("""# CatBoost Classifier for Multi-Class MS Subtype Classification
-## (RRMS, SPMS, PPMS, CIS)
+## (RRMS, SPMS, PPMS)
 
 ---
 
@@ -30,7 +30,6 @@ cells.append(md("""# CatBoost Classifier for Multi-Class MS Subtype Classificati
 - **RRMS** — Relapsing-Remitting MS
 - **SPMS** — Secondary Progressive MS
 - **PPMS** — Primary Progressive MS
-- **CIS** — Clinically Isolated Syndrome
 
 ---"""))
 
@@ -98,7 +97,7 @@ plt.rcParams.update({
     'axes.spines.right': False,
 })
 
-CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50', 'CIS': '#9C27B0'}
+CLASS_PALETTE = {'RRMS': '#2196F3', 'SPMS': '#FF5722', 'PPMS': '#4CAF50'}
 
 print("Environment configured successfully.")
 print(f"NumPy: {np.__version__}, Pandas: {pd.__version__}")
@@ -147,7 +146,7 @@ cells.append(md("""### 2.1 Visualizations
 #### Subtype Distribution"""))
 
 cells.append(code("""fig, ax = plt.subplots(figsize=(8, 5))
-order = ['RRMS', 'SPMS', 'PPMS', 'CIS']
+order = ['RRMS', 'SPMS', 'PPMS']
 colors = [CLASS_PALETTE[s] for s in order]
 counts = df['subtype'].value_counts().reindex(order)
 bars = ax.bar(order, counts, color=colors, edgecolor='white', linewidth=1.2)
@@ -384,7 +383,7 @@ cells.append(md("""---
 
 In MS subtype classification:
 - **Macro F1** treats all subtypes equally, regardless of sample size
-- Rare subtypes (PPMS, CIS) are clinically just as important as common ones (RRMS)
+- Rare subtype (PPMS) are clinically just as important as common ones (RRMS)
 - A model predicting only RRMS would have decent accuracy but abysmal Macro F1
 
 ### Stability Interpretation
@@ -563,7 +562,6 @@ except ValueError as e:
 cells.append(md("""### 7.1 Confusion Matrix
 
 **Clinical Implications:**
-- **CIS → RRMS:** Premature long-term DMT for a potentially isolated event
 - **RRMS → SPMS:** Falsely signaling disease progression
 - **PPMS → RRMS:** Masking a progressive course with relapse-focused treatment
 - CatBoost's ordered boosting often improves discrimination on borderline cases by reducing overfitting to noisy training gradients"""))
