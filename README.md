@@ -49,18 +49,18 @@ This project develops a comprehensive ML pipeline that:
 ## 📊 Visual Results
 
 <p align="center">
-  <img src="Documentation/figures/xgb_08_confusion.png" width="45%" alt="Confusion Matrix" />
-  <img src="Documentation/figures/xgb_09_roc.png" width="45%" alt="ROC Curves" />
+  <img src="figures/xgb_08_confusion.png" width="45%" alt="Confusion Matrix" />
+  <img src="figures/xgb_09_roc.png" width="45%" alt="ROC Curves" />
 </p>
 <p align="center"><em>Left: Confusion Matrix | Right: Multi-class ROC Curves</em></p>
 
 <p align="center">
-  <img src="Documentation/figures/shap_02_shap.png" width="90%" alt="SHAP Beeswarm" />
+  <img src="figures/shap_02_shap.png" width="90%" alt="SHAP Beeswarm" />
 </p>
 <p align="center"><em>SHAP Summary Beeswarm Plot — Per-class Feature Attribution</em></p>
 
 <p align="center">
-  <img src="Documentation/figures/xgb_12_radar.png" width="50%" alt="Radar Chart" />
+  <img src="figures/xgb_12_radar.png" width="50%" alt="Radar Chart" />
 </p>
 <p align="center"><em>Comprehensive Evaluation Metrics Radar Chart</em></p>
 
@@ -114,40 +114,24 @@ This project develops a comprehensive ML pipeline that:
 ```
 ms-subtype-classification-xai/
 │
-├── datasets/
-│   ├── ms_dataset.csv                    # Primary dataset (525 patients × 17 columns)
-│   ├── ms_dataset_backup.csv             # Backup copy
-│   └── ms_dataset_backup_CIS.csv         # Original dataset with CIS class
+├── ms_dataset.csv                        # Primary dataset (525 patients × 17 columns)
 │
-├── research_models/                      # Full research notebooks with visualizations
+├── notebooks/                            # ML model training & evaluation notebooks
 │   ├── XGBoost.ipynb                     # ⭐ Primary model (best performance)
 │   ├── Random_Forest.ipynb               # Bagging ensemble model
 │   ├── Extra_Trees.ipynb                 # Extremely Randomized Trees
 │   ├── CatBoost.ipynb                    # Categorical Boosting model
 │   ├── Logistic_Regression.ipynb         # Linear baseline model
-│   ├── SHAP_Explainability.ipynb         # SHAP analysis notebook
-│   ├── Counterfactual_Explanations.ipynb # DiCE counterfactual notebook
-│   ├── XAI_SHAP_Counterfactual.ipynb     # Combined XAI pipeline
-│   └── Model_Comparison.md              # Performance comparison summary
-│
-├── simple_models/                        # Lightweight demo notebooks
-│   ├── simple_xgboost.ipynb
-│   ├── simple_random_forest.ipynb
-│   ├── simple_extra_trees.ipynb
-│   ├── simple_catboost.ipynb
-│   ├── simple_logistic_regression.ipynb
-│   ├── SHAP_Explainability.ipynb
-│   └── Counterfactual_Explanations.ipynb
+│   ├── SHAP_Explainability.ipynb         # SHAP feature attribution analysis
+│   └── Counterfactual_Explanations.ipynb # DiCE counterfactual generation
 │
 ├── xai_pipeline/
 │   └── XAI_shap_counterfactual.ipynb     # Unified SHAP + DiCE pipeline
 │
-├── Documentation/
-│   ├── LIET Mini project Documentation.docx   # Full project report
-│   ├── Mini Project PPTx.pptx                 # Presentation slides
-│   ├── ICSDE_2026_MS_Paper_v3.docx            # Conference paper draft
-│   ├── figures/                               # Generated plots & charts
-│   └── images/                                # Presentation images
+├── figures/                              # Generated plots & visualizations
+│   ├── xgb_*.png                         # Model evaluation charts
+│   ├── shap_*.png                        # SHAP explainability plots
+│   └── cf_*.png                          # Counterfactual visualizations
 │
 └── README.md
 ```
@@ -207,7 +191,7 @@ pip install pandas numpy matplotlib seaborn scikit-learn xgboost catboost shap d
 jupyter notebook
 
 # Open the main XGBoost notebook
-# Navigate to: research_models/XGBoost.ipynb
+# Navigate to: notebooks/XGBoost.ipynb
 ```
 
 ---
