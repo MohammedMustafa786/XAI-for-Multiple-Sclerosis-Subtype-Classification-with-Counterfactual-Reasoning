@@ -158,7 +158,7 @@ ms-subtype-classification-xai/
 
 ---
 
-## ⚙️ Installation & Setup
+##  Installation & Setup
 
 ### Prerequisites
 - Python 3.9 or higher
@@ -196,7 +196,7 @@ jupyter notebook
 
 ---
 
-## 🔧 Tech Stack
+##  Tech Stack
 
 | Technology | Purpose |
 | :--- | :--- |
