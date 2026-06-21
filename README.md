@@ -6,13 +6,13 @@
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
 </p>
 
-# 🧠 Explainable AI for Multiple Sclerosis Subtype Classification
+#  Explainable AI for Multiple Sclerosis Subtype Classification
 
 > An advanced ensemble machine learning pipeline with dual Explainable AI (SHAP + DiCE) for transparent, multi-class classification of MS subtypes (RRMS, SPMS, PPMS).
 
 ---
 
-## 📌 Abstract
+##  Abstract
 
 Multiple Sclerosis (MS) is a complex, chronic autoimmune disease of the central nervous system affecting over 2.8 million people worldwide. Accurate classification of its subtypes — **Relapsing-Remitting (RRMS)**, **Secondary Progressive (SPMS)**, and **Primary Progressive (PPMS)** — is critical for determining appropriate therapeutic interventions.
 
@@ -24,7 +24,7 @@ This project develops a comprehensive ML pipeline that:
 
 ---
 
-## 🏆 Key Results
+##  Key Results
 
 | Metric | Score |
 | :--- | :--- |
@@ -46,7 +46,7 @@ This project develops a comprehensive ML pipeline that:
 
 ---
 
-## 📊 Visual Results
+##  Visual Results
 
 <p align="center">
   <img src="figures/xgb_08_confusion.png" width="45%" alt="Confusion Matrix" />
@@ -66,7 +66,7 @@ This project develops a comprehensive ML pipeline that:
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -83,7 +83,7 @@ This project develops a comprehensive ML pipeline that:
 ┌─────────────────────────────────────────────────────────────────┐
 │               ENSEMBLE MODEL TRAINING                           │
 │  Logistic Regression │ Random Forest │ Extra Trees              │
-│  CatBoost            │ XGBoost ⭐ (Selected)                    │
+│  CatBoost            │ XGBoost (Selected)                       │
 └──────────────────────────┬──────────────────────────────────────┘
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -109,7 +109,7 @@ This project develops a comprehensive ML pipeline that:
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 ms-subtype-classification-xai/
@@ -117,7 +117,7 @@ ms-subtype-classification-xai/
 ├── ms_dataset.csv                        # Primary dataset (525 patients × 17 columns)
 │
 ├── notebooks/                            # ML model training & evaluation notebooks
-│   ├── XGBoost.ipynb                     # ⭐ Primary model (best performance)
+│   ├── XGBoost.ipynb                     # Primary model (best performance)
 │   ├── Random_Forest.ipynb               # Bagging ensemble model
 │   ├── Extra_Trees.ipynb                 # Extremely Randomized Trees
 │   ├── CatBoost.ipynb                    # Categorical Boosting model
@@ -138,7 +138,7 @@ ms-subtype-classification-xai/
 
 ---
 
-## 📋 Dataset Overview
+##  Dataset Overview
 
 **525 patients** | **16 input features** | **3 target classes**
 
@@ -212,7 +212,7 @@ jupyter notebook
 
 ---
 
-## 🧪 Methodology
+##  Methodology
 
 ### 1. Data Preprocessing
 - Missing value imputation using **median strategy**
@@ -230,7 +230,7 @@ jupyter notebook
 Five algorithms trained and compared:
 - **Linear:** Logistic Regression (baseline)
 - **Bagging:** Random Forest, Extra Trees
-- **Boosting:** XGBoost ⭐, CatBoost
+- **Boosting:** XGBoost, CatBoost
 
 ### 4. XGBoost Hyperparameters
 ```python
@@ -251,7 +251,7 @@ XGBClassifier(
 
 ---
 
-## 🔑 Key Findings
+##  Key Findings
 
 ### Top Predictive Biomarkers (identified by SHAP)
 1. **EDSS Score** — Most dominant feature; higher scores drive progressive classification
@@ -265,30 +265,30 @@ XGBClassifier(
 
 ---
 
-## 🔮 Future Enhancements
+##  Future Enhancements
 
-- 🧬 **Deep Learning Integration** — Hybrid CNN + XGBoost for raw MRI scans
-- 📈 **Longitudinal Forecasting** — LSTM-based temporal disease trajectory prediction
-- 🌍 **Multi-Center Validation** — Cross-institutional dataset expansion
-- 🖥️ **Web Dashboard** — Streamlit/Flask-based clinical decision-support interface
+-  **Deep Learning Integration** — Hybrid CNN + XGBoost for raw MRI scans
+-  **Longitudinal Forecasting** — LSTM-based temporal disease trajectory prediction
+-  **Multi-Center Validation** — Cross-institutional dataset expansion
+-  **Web Dashboard** — Streamlit/Flask-based clinical decision-support interface
 
 ---
 
-## 👥 Team
+##  Team
 
-| Name | Roll Number |
-| :--- | :--- |
-| Mohammed Mustafa | 160923753001 |
-| Syed Atha Ullah Shareef | 160923753002 |
-| Mohammed Mustaqeem Uddin | 160923753017 |
+| Name |
+| :--- |
+| Mohammed Mustafa |
+| Syed Atha Ullah Shareef |
+| Mohammed Mustaqeem Uddin |
 
-**Guide:** Dr. Ayesha Mariyam, Associate Professor
+**Guide:** MS. Hajira Sabuhi, Associate Professor
 
 **Institution:** Lords Institute of Engineering and Technology (UGC Autonomous), Hyderabad
 
 ---
 
-## 📄 References
+##  References
 
 1. Walton et al., "Rising prevalence of MS worldwide," *Multiple Sclerosis Journal*, 2020.
 2. Lublin et al., "Defining the clinical course of MS: The 2013 revisions," *Neurology*, 2014.
@@ -301,12 +301,12 @@ XGBClassifier(
 
 ---
 
-## 📜 License
+##  License
 
 This project is developed as part of the B.E. Mini Project at Lords Institute of Engineering and Technology (A.Y. 2025-2026).
 
 ---
-
+ 
 <p align="center">
   <b>⭐ If you found this project useful, please give it a star!</b>
 </p>
